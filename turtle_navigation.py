@@ -1,67 +1,93 @@
 import turtle
+import time
 
-# Setup window
-window = turtle.Screen()
-window.title("Wheelchair Navigation with Barcode Detection")
-window.setup(width=600, height=600)
-window.tracer(0)
+# Set up screen
+screen = turtle.Screen()
+screen.title("Wheelchair Navigation House Map")
+screen.bgcolor("white")
+screen.setup(width=800, height=600)
 
-# Grid settings
-grid_size = 100
-cols, rows = 6, 6
-
-# Barcode mapping
-barcodes = {
-    (0, 0): "kitchen",
-    (2, 0): "bathroom",
-    (4, 4): "living room"
-}
-destinations = {
-    "kitchen": (100, 400),
-    "bathroom": (300, 400),
-    "living room": (500, 100)
-}
-
-# Draw house grid
+# Turtle to draw walls
 drawer = turtle.Turtle()
-drawer.hideturtle()
 drawer.speed(0)
-drawer.penup()
+drawer.pensize(3)
 
-for i in range(cols):
-    for j in range(rows):
-        x, y = i * grid_size, j * grid_size
-        drawer.goto(x, y)
-        drawer.pendown()
-        for _ in range(4):
-            drawer.forward(grid_size)
-            drawer.right(90)
-        drawer.penup()
+# Movement turtle
+navigator = turtle.Turtle()
+navigator.shape("turtle")
+navigator.color("blue")
+navigator.penup()
+navigator.speed(1)
 
-# Create turtle bot
-bot = turtle.Turtle()
-bot.shape("turtle")
-bot.penup()
-bot.speed(1)
-bot.goto(0, 0)
+# Room centers for navigation
+room_centers = {
+    "Kitchen": (-275, 200),
+    "Living Room": (-75, 200),
+    "Bedroom 1": (125, 200),
+    "Bedroom 2": (325, 200),
+    "Bathroom": (-275, 50),
+    "Hallway": (-75, 50),
+    "Study": (125, 50),
+    "Guest Room": (325, 50),
+    "Entrance": (-75, -25),
+}
 
-# Barcode detection function
-def detect_barcode():
-    pos = (round(bot.xcor() // grid_size), round(bot.ycor() // grid_size))
-    return barcodes.get(pos)
+# Function to draw a rectangle room
+def draw_room(x, y, width, height, label):
+    drawer.penup()
+    drawer.goto(x, y)
+    drawer.pendown()
+    for _ in range(2):
+        drawer.forward(width)
+        drawer.right(90)
+        drawer.forward(height)
+        drawer.right(90)
+    # Label the room
+    drawer.penup()
+    drawer.goto(x + width / 2, y - height / 2)
+    drawer.write(label, align="center", font=("Arial", 12, "bold"))
+
+# Draw rooms
+draw_room(-350, 250, 150, 100, "Kitchen")
+draw_room(-150, 250, 150, 100, "Living Room")
+draw_room(50, 250, 150, 100, "Bedroom 1")
+draw_room(250, 250, 150, 100, "Bedroom 2")
+draw_room(-350, 100, 150, 100, "Bathroom")
+draw_room(-150, 100, 150, 100, "Hallway")
+draw_room(50, 100, 150, 100, "Study")
+draw_room(250, 100, 150, 100, "Guest Room")
+draw_room(-150, -50, 150, 100, "Entrance")
+
+drawer.hideturtle()
+
+# Move turtle to entrance to start
+navigator.goto(room_centers["Entrance"])
+
+# Read destination from barcode trigger file
+def get_destination():
+    try:
+        with open("trigger.txt", "r") as file:
+            dest = file.read().strip()
+            return dest
+    except FileNotFoundError:
+        return ""
 
 # Move to destination
-def move_to(destination):
-    x_target, y_target = destinations[destination]
-    while round(bot.xcor()) < x_target:
-        bot.setx(bot.xcor() + grid_size)
-    while round(bot.ycor()) < y_target:
-        bot.sety(bot.ycor() + grid_size)
+def go_to(destination):
+    if destination in room_centers:
+        target = room_centers[destination]
+        navigator.setheading(navigator.towards(target))
+        navigator.pendown()
+        navigator.goto(target)
+    else:
+        print(f"Invalid destination: {destination}")
 
-# Simulate detection and action
-detected_room = detect_barcode()
-if detected_room:
-    move_to(detected_room)
+# Wait briefly then navigate
+time.sleep(1)
+destination = get_destination()
+if destination:
+    go_to(destination)
+else:
+    print("No destination found.")
 
-window.update()
-window.mainloop()
+turtle.done()
